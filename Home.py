@@ -6,7 +6,7 @@ import time
 from pathlib import Path
 
 LOGO_PATH = Path(__file__).parent / "images" / "logo.png"
-DEFAULT_DATABASE = "RealEstate"
+DEFAULT_DATABASE = "village"
 
 def get_all_database_connections(api_url):
     try:
@@ -26,7 +26,7 @@ def add_database_connection(api_url, connection_data):
 def answer_question(api_url, db_connection_id, question):
     request_body = {
         "llm_config": {
-            "llm_name": "gpt-4-turbo-preview"
+            "llm_name": "gpt-4o"
         },
         "prompt": {
             "text": question,
@@ -38,9 +38,10 @@ def answer_question(api_url, db_connection_id, question):
             response.raise_for_status()
             for chunk in response.iter_content(chunk_size=2048):
                 if chunk:
-                    response = chunk.decode("utf-8")
+                    response = chunk.decode("utf-8", "replace")
                     yield response + "\n"
                     time.sleep(0.1)
+                    
     except requests.exceptions.RequestException as e:
         st.error(f"Connection failed due to {e}.")
 
@@ -86,7 +87,7 @@ st.sidebar.write("Query your structured database in natural language.")
 st.sidebar.write("Enable business users to get answers to ad hoc data questions in seconds.")  # noqa: E501
 st.sidebar.page_link("https://www.dataherald.com/", label="Visit our website", icon="🌐")
 st.sidebar.subheader("Connect to the engine")
-HOST = st.sidebar.text_input("Engine URI", value="https://streamlit.dataherald.ai")
+HOST = st.sidebar.text_input("Engine URI", value="http://localhost:8095")
 st.session_state["HOST"] = HOST
 if st.sidebar.button("Connect"):
     url = HOST + '/api/v1/heartbeat'
