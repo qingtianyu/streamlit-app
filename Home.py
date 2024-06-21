@@ -2,11 +2,16 @@ import requests
 import streamlit as st
 import webbrowser
 import time
+import os
 
 from pathlib import Path
 
+# 获取环境变量
+DATABASE_NAME = os.getenv('DATABASE_NAME')
+ENGINE_HOST = os.getenv('ENGINE_HOST')
+
 LOGO_PATH = Path(__file__).parent / "images" / "logo.png"
-DEFAULT_DATABASE = "village"
+DEFAULT_DATABASE = ENGINE_HOST or 'village'
 
 def get_all_database_connections(api_url):
     try:
@@ -87,7 +92,7 @@ st.sidebar.write("Query your structured database in natural language.")
 st.sidebar.write("Enable business users to get answers to ad hoc data questions in seconds.")  # noqa: E501
 st.sidebar.page_link("https://www.dataherald.com/", label="Visit our website", icon="🌐")
 st.sidebar.subheader("Connect to the engine")
-HOST = st.sidebar.text_input("Engine URI", value="http://localhost:8095")
+HOST = st.sidebar.text_input("Engine URI", value=ENGINE_HOST or "http://localhost:8095")
 st.session_state["HOST"] = HOST
 if st.sidebar.button("Connect"):
     url = HOST + '/api/v1/heartbeat'
