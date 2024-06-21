@@ -11,7 +11,7 @@ DATABASE_NAME = os.getenv('DATABASE_NAME')
 ENGINE_HOST = os.getenv('ENGINE_HOST')
 
 LOGO_PATH = Path(__file__).parent / "images" / "logo.png"
-DEFAULT_DATABASE = ENGINE_HOST or 'village'
+DEFAULT_DATABASE = DATABASE_NAME or 'village'
 
 def get_all_database_connections(api_url):
     try:
