@@ -13,6 +13,9 @@ ENGINE_HOST = os.getenv('ENGINE_HOST')
 LOGO_PATH = Path(__file__).parent / "images" / "logo.png"
 DEFAULT_DATABASE = DATABASE_NAME or 'village'
 
+# 定义可用的模型列表
+AVAILABLE_MODELS = ["gpt-4o", "gpt-3.5-turbo", "qwen-plus", "Qwen-72B-Chat"]
+
 def get_all_database_connections(api_url):
     try:
         response = requests.get(api_url)
@@ -28,10 +31,10 @@ def add_database_connection(api_url, connection_data):
     except requests.exceptions.RequestException:
         return None
 
-def answer_question(api_url, db_connection_id, question):
+def answer_question(api_url, db_connection_id, question, llm_config):
     request_body = {
         "llm_config": {
-            "llm_name": "gpt-4o"
+            "llm_name": llm_config['llm_name']
         },
         "prompt": {
             "text": question,
@@ -78,48 +81,57 @@ This app is a proof of concept using the Dataherald NL-2-SQL engine using a stre
 The data available includes: rents, sales prices, listing prices, price per square foot, number of homes sold, inventory and number of pending sales up to June 2023.
 """  # noqa: E501
 INTRO_EXAMPLE = """
-A sample question you can ask is: Did property prices increase or decrease in the US in 2020?
+查询示例：查询枫桥镇2024年所有村书记的任务签收及时率
 """
 
 st.set_page_config(
     page_title="Dataherald",
     page_icon="./images/logo.png",
-    layout="wide")
+    layout="wide"
+)
 
 # Setup environment settings
 st.sidebar.title("Dataherald")
-st.sidebar.write("Query your structured database in natural language.")
-st.sidebar.write("Enable business users to get answers to ad hoc data questions in seconds.")  # noqa: E501
-st.sidebar.page_link("https://www.dataherald.com/", label="Visit our website", icon="🌐")
-st.sidebar.subheader("Connect to the engine")
-HOST = st.sidebar.text_input("Engine URI", value=ENGINE_HOST or "http://localhost:8095")
+st.sidebar.write("使用自然语言查询结构化数据库")
+# 在侧边栏添加一个下拉框供用户选择模型
+selected_model = st.sidebar.selectbox("选择模型", AVAILABLE_MODELS, index=0)
+
+# 更新llm_config中的llm_name值
+llm_config = {
+    "llm_name": selected_model
+}
+
+# st.sidebar.write("Enable business users to get answers to ad hoc data questions in seconds.")  # noqa: E501
+# st.sidebar.page_link("https://www.dataherald.com/", label="Visit our website", icon="🌐")
+st.sidebar.subheader("连接引擎")
+HOST = st.sidebar.text_input("引擎地址", value=ENGINE_HOST or "http://localhost:8095")
 st.session_state["HOST"] = HOST
-if st.sidebar.button("Connect"):
+if st.sidebar.button("测试连接"):
     url = HOST + '/api/v1/heartbeat'
     if test_connection(url):
-        st.sidebar.success("Connected to engine.")
+        st.sidebar.success("连接成功.")
     else:
-        st.sidebar.error("Connection failed.")
+        st.sidebar.error("连接失败.")
 
 # Setup main page
 st.image("images/dataherald.png", width=500)
 if not test_connection(HOST + '/api/v1/heartbeat'):
-    st.error("Could not connect to engine. Please connect to the engine on the left sidebar.")  # noqa: E501
+    st.error("无法连接到引擎。")  # noqa: E501
     st.stop()
 else:
     database_connections = get_all_database_connections(HOST + '/api/v1/database-connections')  # noqa: E501
     if st.session_state.get("database_connection_id", None) is None:
         st.session_state["database_connection_id"] = database_connections[DEFAULT_DATABASE]  # noqa: E501
     db_name = find_key_by_value(database_connections, st.session_state["database_connection_id"])  # noqa: E501
-    st.warning(f"Connected to {db_name} database.")
-    st.info(INTRODUCTION_TEXT)  # noqa: E501
+    st.warning(f"连接到【 {db_name} 】数据库.")
+    # st.info(INTRODUCTION_TEXT)  # noqa: E501
     st.info(INTRO_EXAMPLE)
 
 output_container = st.empty()
-user_input = st.chat_input("Ask your question")
+user_input = st.chat_input("提问")
 output_container = output_container.container()
 if user_input:
     output_container.chat_message("user").write(user_input)
     answer_container = output_container.chat_message("assistant")
     with st.spinner("Agent starts..."):
-        st.write_stream(answer_question(HOST + '/api/v1/stream-sql-generation', st.session_state["database_connection_id"], user_input))
+        st.write_stream(answer_question(HOST + '/api/v1/stream-sql-generation', st.session_state["database_connection_id"], user_input, llm_config))
