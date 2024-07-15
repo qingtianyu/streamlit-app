@@ -104,7 +104,7 @@ llm_config = {
 # st.sidebar.write("Enable business users to get answers to ad hoc data questions in seconds.")  # noqa: E501
 # st.sidebar.page_link("https://www.dataherald.com/", label="Visit our website", icon="🌐")
 st.sidebar.subheader("连接引擎")
-HOST = st.sidebar.text_input("引擎地址", value=ENGINE_HOST or "http://localhost:8095")
+HOST = ENGINE_HOST or "http://localhost:8095"
 st.session_state["HOST"] = HOST
 if st.sidebar.button("测试连接"):
     url = HOST + '/api/v1/heartbeat'
